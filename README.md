@@ -45,7 +45,7 @@ The app shows your current available credit ($98.1809 in the example) directly i
 ### From Source
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/OpenRouterCreditMenuBar.git
+   git clone https://github.com/kittizz/OpenRouterCreditMenuBar.git
    ```
 2. Open `OpenRouterCreditMenuBar.xcodeproj` in Xcode
 3. Build and run the project (⌘+R)
@@ -127,7 +127,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-[Add your chosen license here - e.g., MIT, Apache 2.0]
+MIT License [LICENSE](LICENSE)
 
 ## Support
 
