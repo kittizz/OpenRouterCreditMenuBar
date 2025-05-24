@@ -3,25 +3,79 @@ version: '3'
 vars:
     APP_NAME: OpenRouterCreditMenuBar
     BUNDLE_ID: com.kttizz.OpenRouterCreditMenuBar
-    VERSION: v1.0.0
+    VERSION: v1.0.1
     BUILD_DIR: ~/Library/Developer/Xcode/DerivedData
     SCHEME: '{{.APP_NAME}}'
+    GITHUB_REPOSITORY: kittizz/OpenRouterCreditMenuBar
+
 tasks:
+    clean:
+        desc: Clean build artifacts
+        cmds:
+            - rm -rf ./build
+            - rm -rf ./release
+            - rm -rf ~/Library/Developer/Xcode/DerivedData/OpenRouterCreditMenuBar-*
+            - rm -rf ./OpenRouterCreditMenuBar.xcodeproj/project.xcworkspace/xcuserdata
+            - rm -rf ./OpenRouterCreditMenuBar.xcodeproj/xcuserdata
+            - rm -rf ~/Library/Developer/Xcode/DerivedData/*
+            - sleep 2
+            - echo "Cleaned build artifacts"
+
     build:
         desc: Build Release version
+        deps: [clean]
         cmds:
-            - xcodebuild -scheme {{.SCHEME}} -configuration Release -derivedDataPath ./build clean build
+            - |
+                if pgrep -x "Xcode" > /dev/null; then
+                  echo "Xcode is running. Please close Xcode first."
+                  exit 1
+                fi
+            - rm -rf ./build
+            - mkdir -p ./build
+            - |
+                xcodebuild -scheme {{.SCHEME}} \
+                  -configuration Release \
+                  -derivedDataPath ./build \
+                  -destination "platform=macOS,arch=arm64" \
+                  clean build
+
+    build-universal:
+        desc: Build Universal app (arm64 + x86_64)
+        deps: [clean]
+        cmds:
+            - rm -rf ./build
+            - mkdir -p ./build
+            - |
+                xcodebuild -scheme {{.SCHEME}} \
+                  -configuration Release \
+                  -derivedDataPath ./build \
+                  -destination "platform=macOS,arch=arm64" \
+                  -archivePath ./build/{{.APP_NAME}}-arm64.xcarchive \
+                  archive
+            - |
+                xcodebuild -scheme {{.SCHEME}} \
+                  -configuration Release \
+                  -derivedDataPath ./build \
+                  -destination "platform=macOS,arch=x86_64" \
+                  -archivePath ./build/{{.APP_NAME}}-x86_64.xcarchive \
+                  archive
+            - |
+                xcodebuild -create-xcframework \
+                  -framework ./build/{{.APP_NAME}}-arm64.xcarchive/Products/Applications/{{.APP_NAME}}.app \
+                  -framework ./build/{{.APP_NAME}}-x86_64.xcarchive/Products/Applications/{{.APP_NAME}}.app \
+                  -output ./build/{{.APP_NAME}}.xcframework
 
     export-app:
         desc: Export Application from build
-        deps: [build]
-        vars:
-            BUILD_PATH: './build/Build/Products/Release/{{.APP_NAME}}.app'
-            OUTPUT_DIR: './release'
         cmds:
-            - mkdir -p {{.OUTPUT_DIR}}
-            - cp -R {{.BUILD_PATH}} {{.OUTPUT_DIR}}/
-            - echo "Exported {{.APP_NAME}}.app to {{.OUTPUT_DIR}}/"
+            - |
+                if [ ! -d "./build/Build/Products/Release/{{.APP_NAME}}.app" ]; then
+                  echo "Build not found. Running build first..."
+                  task build
+                fi
+            - mkdir -p ./release
+            - cp -R "./build/Build/Products/Release/{{.APP_NAME}}.app" "./release/"
+            - echo "Exported {{.APP_NAME}}.app to ./release/"
         generates:
             - ./release/{{.APP_NAME}}.app
 
@@ -56,7 +110,7 @@ tasks:
         desc: Create GitHub release and upload assets
         deps: [package]
         vars:
-            REPO: '{{.GITHUB_REPOSITORY | default "username/repo"}}'
+            REPO: '{{.GITHUB_REPOSITORY}}'
         cmds:
             - |
                 gh release create {{.VERSION}} \
@@ -71,17 +125,10 @@ tasks:
             - echo "Released {{.VERSION}} to GitHub!"
 
     release:
+        deps: [build]
         desc: Full release pipeline
         cmds:
-            - task: clean
             - task: github-release
-
-    clean:
-        desc: Clean build artifacts
-        cmds:
-            - rm -rf ./build
-            - rm -rf ./release
-            - echo "Cleaned build artifacts"
 
     check-deps:
         desc: Check required dependencies
@@ -97,3 +144,13 @@ tasks:
                   exit 1
                 fi
             - echo "All dependencies satisfied"
+
+    debug-info:
+        desc: Show debug information
+        cmds:
+            - echo "Xcode version:"
+            - xcodebuild -version
+            - echo "Available schemes:"
+            - xcodebuild -list
+            - echo "Available destinations:"
+            - xcodebuild -showdestinations -scheme {{.SCHEME}}
