@@ -10,12 +10,14 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            Text("OpenRouter Credit Menu Bar")
+                .font(.title)
+            Text("Check your menu bar for the credit display!")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding()
+        .frame(width: 300, height: 200)
     }
 }
 
