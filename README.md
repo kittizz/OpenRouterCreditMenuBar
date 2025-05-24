@@ -1,4 +1,4 @@
-# OpenRouterCreditMenuBar
+# OpenRouter Credit MenuBar
 
 A sleek macOS menu bar application for monitoring your OpenRouter API credits in real-time.
 
